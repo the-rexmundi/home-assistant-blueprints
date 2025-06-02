@@ -1,0 +1,92 @@
+blueprint:
+  name: Auto Turn Off Lights After 30 Minutes
+  description: >
+    Automatically turn off selected lights after they have been on for 30 minutes or more.
+    The blueprint checks every minute and turns off any lights that have exceeded the time limit.
+  domain: automation
+  input:
+    target_lights:
+      name: Lights to Monitor
+      description: Select the lights that should be automatically turned off after 30 minutes
+      selector:
+        entity:
+          multiple: true
+          filter:
+            domain: light
+    check_interval:
+      name: Check Interval
+      description: How often to check if lights should be turned off (in minutes)
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 5
+          step: 1
+          unit_of_measurement: "minutes"
+    timeout_duration:
+      name: Timeout Duration
+      description: How long lights can stay on before being turned off (in minutes)
+      default: 30
+      selector:
+        number:
+          min: 5
+          max: 480
+          step: 5
+          unit_of_measurement: "minutes"
+    exclude_manual_override:
+      name: Skip Recently Manual Controlled Lights
+      description: >
+        If enabled, lights that were manually turned on/off in the last 2 minutes will be skipped.
+        This prevents the automation from immediately turning off lights you just turned on.
+      default: true
+      selector:
+        boolean:
+
+variables:
+  target_lights: !input target_lights
+  timeout_minutes: !input timeout_duration
+  exclude_manual: !input exclude_manual_override
+  timeout_seconds: "{{ timeout_minutes * 60 }}"
+
+trigger:
+  - platform: time_pattern
+    minutes: "/{{ states('input_number.check_interval') | int(1) if states('input_number.check_interval') != 'unavailable' else (input_check_interval | int(1)) }}"
+
+condition: []
+
+action:
+  - repeat:
+      for_each: "{{ target_lights }}"
+      sequence:
+        - variables:
+            light_entity: "{{ repeat.item }}"
+            light_state: "{{ states(light_entity) }}"
+            last_changed: "{{ state_attr(light_entity, 'last_changed') }}"
+            last_updated: "{{ state_attr(light_entity, 'last_updated') }}"
+            time_since_changed: "{{ (now() - (last_changed | as_datetime)).total_seconds() if last_changed else 0 }}"
+            time_since_updated: "{{ (now() - (last_updated | as_datetime)).total_seconds() if last_updated else 0 }}"
+            recently_manual: "{{ exclude_manual and (time_since_updated < 120) }}"
+        
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: "{{ light_state == 'on' }}"
+                - condition: template
+                  value_template: "{{ time_since_changed >= timeout_seconds }}"
+                - condition: template
+                  value_template: "{{ not recently_manual }}"
+              sequence:
+                - service: light.turn_off
+                  target:
+                    entity_id: "{{ light_entity }}"
+                - service: logbook.log
+                  data:
+                    name: "Auto Light Timeout"
+                    message: >
+                      Light {{ light_entity }} automatically turned off after 
+                      {{ (time_since_changed / 60) | round(1) }} minutes
+                    entity_id: "{{ light_entity }}"
+
+mode: single
+max_exceeded: silent
+
