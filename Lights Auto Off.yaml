@@ -50,7 +50,7 @@ variables:
 
 trigger:
   - platform: time_pattern
-    minutes: "/{{ states('input_number.check_interval') | int(1) }}"
+    minutes: "/{{ states('check_interval') | int(1) }}"
 
 condition: []
 
