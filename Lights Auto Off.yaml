@@ -50,7 +50,7 @@ variables:
 
 trigger:
   - platform: time_pattern
-    minutes: "/{{ states('input_number.check_interval') | int(1) if states('input_number.check_interval') != 'unavailable' else (input_check_interval | int(1)) }}"
+    minutes: "/{{ states('input_number.check_interval') | int(1) }}"
 
 condition: []
 
