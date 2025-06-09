@@ -8,7 +8,9 @@ blueprint:
       description: Select the lights that should be automatically turned off
       selector:
         entity:
-          domain: light
+          domain: 
+            - light
+            - switch
           multiple: true
     timeout_duration:
       name: Timeout Duration
