@@ -1,6 +1,6 @@
 blueprint:
-  name: Auto Lights Off After X Minutes
-  description: Automatically turns off specified lights after they have been on for Z minutes or more
+  name: Auto Off After X Minutes
+  description: Automatically turns off specified lights/switches after they have been on for X minutes or more
   domain: automation
   input:
     light_entities:
