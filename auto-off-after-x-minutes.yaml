@@ -5,7 +5,7 @@ blueprint:
   input:
     light_entities:
       name: Light Entities
-      description: Select the lights that should be automatically turned off
+      description: Select the lights/switches that should be automatically turned off
       selector:
         entity:
           domain: 
@@ -14,7 +14,7 @@ blueprint:
           multiple: true
     timeout_duration:
       name: Timeout Duration
-      description: How long lights can stay on before being automatically turned off (in minutes)
+      description: How long lights/switches can stay on before being automatically turned off (in minutes)
       default: 30
       selector:
         number:
