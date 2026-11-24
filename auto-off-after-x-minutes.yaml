@@ -3,7 +3,7 @@ blueprint:
   description: Automatically turns off specified lights/switches after they have been on for X minutes or more
   domain: automation
   input:
-    light_entities:
+    entities:
       name: Light Entities
       description: Select the lights/switches that should be automatically turned off
       selector:
