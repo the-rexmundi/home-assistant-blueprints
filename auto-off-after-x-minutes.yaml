@@ -1,60 +1,44 @@
 blueprint:
-  name: Auto Off After X Minutes
-  description: Automatically turns off specified lights/switches after they have been on for X minutes or more
+  name: Auto Off After Duration
+  description: Turns off selected entities once they have been on for the configured duration
   domain: automation
   input:
-    entities:
-      name: Light/Switch Entities
-      description: Select the lights/switches that should be automatically turned off
+    auto_off_entities:
+      name: Entities
+      description: Select the entities that should be turned off automatically once they have been on for the configured duration
       selector:
         entity:
-          domain: 
+          domain:
             - light
             - switch
           multiple: true
     timeout_duration:
-      name: Timeout Duration
-      description: How long lights/switches can stay on before being automatically turned off (in minutes)
-      default: 30
+      name: Turn off after
+      description: How long the selected entities can stay on before being turned off
+      default:
+        minutes: 30
       selector:
-        number:
-          min: 1
-          max: 120
-          unit_of_measurement: "minutes"
-          
+        duration: {}
 
-variables:
-  light_entities: !input entities
-  timeout_minutes: !input timeout_duration
+triggers:
+  - trigger: state
+    entity_id: !input auto_off_entities
+    to: "on"
+    for: !input timeout_duration
 
+conditions: []
 
-trigger:
-  - platform: time_pattern
-    minutes: "*"
-    
+actions:
+  - action: homeassistant.turn_off
+    target:
+      entity_id: "{{ trigger.entity_id }}"
+  - action: logbook.log
+    data:
+      name: Auto Off
+      message: >-
+        Automatically turned off
+        {{ state_attr(trigger.entity_id, 'friendly_name') or trigger.entity_id }}
+      entity_id: "{{ trigger.entity_id }}"
 
-
-condition: []
-
-action:
-  - repeat:
-      for_each: "{{ entities }}"
-      sequence:
-        - variables:
-            entity: "{{ repeat.item }}"
-            current_time: "{{ now() }}"
-            state: "{{ states(entity) }}"
-            last_changed: "{{ states[entity].last_changed }}"
-            time_diff_minutes: "{{ ((as_timestamp(current_time) - as_timestamp(last_changed))/ 60) | int }}"
-        - condition: template
-          value_template: "{{ state == 'on' and time_diff_minutes >= timeout_minutes }}"
-        - service: homeassistant.turn_off
-          target:
-            entity_id: "{{ entity }}"
-        - service: logbook.log
-          data:
-            name: "Auto Off"
-            message: "Automatically turned off {{ state_attr(entity, 'friendly_name') or entity }} after {{ time_diff_minutes }} minutes"
-
-mode: single
-max_exceeded: silent
+mode: queued
+max: 10
