@@ -4,7 +4,7 @@ blueprint:
   domain: automation
   input:
     entities:
-      name: Light Entities
+      name: Light/Switch Entities
       description: Select the lights/switches that should be automatically turned off
       selector:
         entity:
